@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { APK_DOWNLOAD_URL, APP_VERSION, GITHUB_URL } from "./config";
 import homeScreen from "./public/Home.jpg";
+import founditIcon from "./public/foundit-icon.png";
 import loginScreen from "./public/login.jpg";
 import lostScreen from "./public/lost.jpg";
 import matchScreen from "./public/match.jpg";
@@ -23,9 +24,12 @@ function Logo() {
       className="flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-blue-300"
       aria-label="FoundIT home"
     >
-      <span className="relative grid h-10 w-10 place-items-center border-[3px] border-slate-950 bg-blue-600 text-lg text-white shadow-[3px_3px_0_#0f172a]">
-        ⌕
-        <i className="absolute -bottom-1 -right-1 h-3 w-3 border-2 border-slate-950 bg-amber-400" />
+      <span className="relative grid h-10 w-10 place-items-center overflow-hidden border-[3px] border-slate-950 bg-white shadow-[3px_3px_0_#0f172a]">
+        <img
+          src={founditIcon}
+          alt="FoundIT logo"
+          className="h-full w-full object-contain p-1"
+        />
       </span>
       <span className="font-black text-xl tracking-[-.08em]">
         Found<span className="text-blue-600">IT</span>
@@ -33,6 +37,7 @@ function Logo() {
     </a>
   );
 }
+
 function Button({ children, href, kind = "blue", className = "" }) {
   const styles = {
     blue: "bg-blue-600 text-white hover:bg-blue-700",
@@ -882,3 +887,4 @@ function App() {
   );
 }
 export default App;
+
