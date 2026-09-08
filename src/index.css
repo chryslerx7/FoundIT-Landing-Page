@@ -1,19 +1,75 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Press+Start+2P&family=Space+Mono:wght@400;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@layer base { html { scroll-behavior: smooth; } body { @apply m-0 bg-slate-50 font-sans text-slate-900 antialiased; } * { box-sizing: border-box; } ::selection { @apply bg-blue-600 text-white; } }
-@layer components {
- .shell { @apply mx-auto w-full max-w-7xl px-5 sm:px-8; }
- .pixel-text { @apply font-pixel text-[9px] leading-relaxed tracking-wide; }
- .eyebrow { @apply font-mono text-xs font-bold tracking-[.16em] text-blue-700; }
- .brutal { @apply border-[3px] border-slate-950 shadow-[5px_5px_0_#0f172a]; }
- .brutal-sm { @apply border-2 border-slate-950 shadow-[3px_3px_0_#0f172a]; }
- .btn { @apply inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-slate-950 px-5 py-3 font-mono text-sm font-bold uppercase tracking-wide shadow-[4px_4px_0_#0f172a] transition duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#0f172a] active:translate-x-1 active:translate-y-1 active:shadow-none focus:outline-none focus:ring-4 focus:ring-blue-300; }
- .section-title { @apply mt-3 font-black uppercase leading-[.9] tracking-[-.065em] text-slate-950 text-4xl sm:text-5xl lg:text-7xl; }
- .grid-paper { background-image: linear-gradient(#cbd5e155 1px, transparent 1px), linear-gradient(90deg, #cbd5e155 1px, transparent 1px); background-size: 22px 22px; }
- .phone { @apply relative mx-auto w-[252px] overflow-hidden rounded-[27px] border-[7px] border-slate-950 bg-slate-950 p-1 shadow-[10px_10px_0_#0f172a]; }
- .phone-screen { @apply min-h-[468px] overflow-hidden rounded-[18px] bg-[#eff6ff] text-left; }
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply m-0 bg-slate-50 font-sans text-slate-900 antialiased;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  ::selection {
+    @apply bg-blue-600 text-white;
+  }
 }
-@media (prefers-reduced-motion: reduce) { *, ::before, ::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@layer components {
+  .shell {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+  .pixel-text {
+    @apply font-pixel text-[9px] leading-relaxed tracking-wide;
+  }
+  .eyebrow {
+    @apply font-mono text-xs font-bold tracking-[.16em] text-blue-700;
+  }
+  .brutal {
+    @apply border-[3px] border-slate-950 shadow-[5px_5px_0_#0f172a];
+  }
+  .brutal-sm {
+    @apply border-2 border-slate-950 shadow-[3px_3px_0_#0f172a];
+  }
+  .btn {
+    @apply inline-flex min-h-12 items-center justify-center gap-2 border-[3px] border-slate-950 px-5 py-3 font-mono text-sm font-bold uppercase tracking-wide shadow-[4px_4px_0_#0f172a] transition duration-150 hover:-translate-y-0.5 hover:shadow-[6px_6px_0_#0f172a] active:translate-x-1 active:translate-y-1 active:shadow-none focus:outline-none focus:ring-4 focus:ring-blue-300;
+  }
+  .section-title {
+    @apply mt-3 font-black uppercase leading-[.9] tracking-[-.065em] text-slate-950 text-4xl sm:text-5xl lg:text-7xl;
+  }
+  .grid-paper {
+    background-image:
+      linear-gradient(#cbd5e155 1px, transparent 1px),
+      linear-gradient(90deg, #cbd5e155 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .phone {
+    @apply relative mx-auto w-[252px] overflow-hidden rounded-[27px] border-[7px] border-slate-950 bg-slate-950 p-1 shadow-[10px_10px_0_#0f172a];
+  }
+  .phone-screen {
+    @apply min-h-[468px] overflow-hidden rounded-[18px] bg-[#eff6ff] text-left;
+  }
+  .pixelated-screen {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    -ms-interpolation-mode: nearest-neighbor;
+  }
+  .screen-pixel-overlay {
+    background-image:
+      linear-gradient(rgba(15, 23, 42, 0.07) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(15, 23, 42, 0.07) 1px, transparent 1px);
+    background-size: 8px 8px;
+    mix-blend-mode: multiply;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
