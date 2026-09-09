@@ -39,6 +39,10 @@
   .section-title {
     @apply mt-3 font-black uppercase leading-[.9] tracking-[-.065em] text-slate-950 text-4xl sm:text-5xl lg:text-7xl;
   }
+
+  .section-Title1 {
+     @apply mt-3 font-white uppercase leading-[.9] tracking-[-.065em] text-slate-300 text-4xl sm:text-5xl lg:text-7xl;
+  }
   .grid-paper {
     background-image:
       linear-gradient(#cbd5e155 1px, transparent 1px),
