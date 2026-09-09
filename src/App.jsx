@@ -52,11 +52,11 @@ function Button({ children, href, kind = "blue", className = "" }) {
     </a>
   );
 }
-function SectionHeader({ label, title, children }) {
+function SectionHeader({ label, title, titleClassName = "", children }) {
   return (
     <div className="max-w-3xl">
       <p className="eyebrow">// {label}</p>
-      <h2 className="section-title">{title}</h2>
+      <h2 className={`section-title ${titleClassName}`}>{title}</h2>
       {children && (
         <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
           {children}
@@ -738,6 +738,7 @@ function App() {
             <SectionHeader
               label="HCI / UI DESIGN"
               title="Designed with people in mind."
+              titleClassName="text-white"
             >
               <span className="text-slate-300">
                 Quietly practical choices that make finding and returning feel
@@ -887,4 +888,3 @@ function App() {
   );
 }
 export default App;
-
