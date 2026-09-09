@@ -735,9 +735,9 @@ function App() {
         </section>
         <section className="bg-slate-950 py-20 text-white">
           <div className="shell">
-            <SectionHeader
+            <SectionHeader className="text-slate-300"
               label="HCI / UI DESIGN"
-              title="Designed with people in mind." className="text-slate-300"
+              title="Designed with people in mind."
             >
               <span className="text-slate-300">
                 Quietly practical choices that make finding and returning feel
