@@ -737,7 +737,7 @@ function App() {
           <div className="shell">
             <SectionHeader
               label="HCI / UI DESIGN"
-              title="Designed with people in mind."
+              title="Designed with people in mind." className="text-slate-300"
             >
               <span className="text-slate-300">
                 Quietly practical choices that make finding and returning feel
