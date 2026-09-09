@@ -735,10 +735,10 @@ function App() {
         </section>
         <section className="bg-slate-950 py-20 text-white">
           <div className="shell">
-            <SectionHeader className="text-slate-300"
+            <SectionHeader
               label="HCI / UI DESIGN"
-              Title1="Designed with people in mind."
             >
+              <title>Designed with people in mind.</title>
               <span className="text-slate-300">
                 Quietly practical choices that make finding and returning feel
                 straightforward.
