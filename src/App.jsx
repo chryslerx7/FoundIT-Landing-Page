@@ -326,9 +326,9 @@ function Navbar() {
             </a>
           ))}
         </div>
-        <a href={APK_DOWNLOAD_URL} className="hidden md:inline-flex">
+        <button href={APK_DOWNLOAD_URL} className="hidden md:inline-flex">
           Download app
-        </a>
+        </button>
         <button
           onClick={() => setOpen(!open)}
           aria-label="Toggle navigation"
@@ -351,7 +351,7 @@ function Navbar() {
                 {n}
               </a>
             ))}
-            <a href={APK_DOWNLOAD_URL}>Download app</a>
+            <button href={APK_DOWNLOAD_URL}>Download app</button>
           </div>
         </div>
       )}
@@ -473,7 +473,7 @@ function App() {
                 Find what you've lost. Return what you've found.
               </p>
               <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <a href={APK_DOWNLOAD_URL}>Download FoundIT</a>
+                <button href={APK_DOWNLOAD_URL}>Download FoundIT</button>
                 <Button href="#features" kind="white">
                   Explore features
                 </Button>
@@ -779,9 +779,9 @@ function App() {
                 Download FoundIT for Android.
               </SectionHeader>
               <div className="mt-8">
-                <a href={APK_DOWNLOAD_URL} className="text-base">
+                <button href={APK_DOWNLOAD_URL} className="text-base">
                   Download APK
-                </a>
+                </button>
                 <a
                   className="ml-4 inline-block border-b-2 border-slate-950 pb-1 font-mono text-sm font-bold hover:text-blue-600"
                   href={GITHUB_URL}
@@ -855,9 +855,9 @@ function App() {
               <p className="font-mono leading-7 text-blue-100">
                 One campus system for the little things that matter.
               </p>
-              <a href={APK_DOWNLOAD_URL} kind="white" className="mt-6">
+              <button href={APK_DOWNLOAD_URL} kind="white" className="mt-6">
                 Download FoundIT
-              </a>
+              </button>
             </div>
           </div>
         </section>
