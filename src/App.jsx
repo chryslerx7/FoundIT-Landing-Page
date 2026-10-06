@@ -1,13 +1,34 @@
 import { useEffect, useRef, useState } from "react";
 import { APK_DOWNLOAD_URL, APP_VERSION, GITHUB_URL } from "./config";
-import homeScreen from "./public/Home.jpg";
-import founditIcon from "./public/foundit-icon.png";
-import loginScreen from "./public/login.jpg";
-import lostScreen from "./public/lost.jpg";
+import logoLight from "./public/found-it-icon-light.svg";
+import logoDark from "./public/found-it-icon-dark.png";
+import homeLight from "./public/home-light.jpg";
+import homeDark from "./public/home-dark.jpg";
+import loginLight from "./public/login-light.jpg";
+import loginDark from "./public/login-dark.jpg";
+import lostLight from "./public/lost-light.jpg";
+import lostDark from "./public/lost-dark.jpg";
 import matchScreen from "./public/match.jpg";
-import messageScreen from "./public/message.jpg";
-import reportsScreen from "./public/reports.jpg";
-import searchScreen from "./public/search.jpg";
+import messageLight from "./public/message-light.jpg";
+import messageDark from "./public/message-dark.jpg";
+import reportsLight from "./public/reports-light.jpg";
+import reportsDark from "./public/reports-dark.jpg";
+import searchLight from "./public/search-light.jpg";
+import searchDark from "./public/search-dark.jpg";
+
+/* Theme-aware Android screenshot set, driven by the existing website
+   theme state (single source of truth). match.jpg is intentionally
+   theme-independent and shared by both themes. */
+const LOGOS = { light: logoLight, dark: logoDark };
+const SHOTS = {
+  home: { light: homeLight, dark: homeDark },
+  login: { light: loginLight, dark: loginDark },
+  lost: { light: lostLight, dark: lostDark },
+  message: { light: messageLight, dark: messageDark },
+  reports: { light: reportsLight, dark: reportsDark },
+  search: { light: searchLight, dark: searchDark },
+};
+const pickShot = (key, dark) => SHOTS[key][dark ? "dark" : "light"];
 
 /* ---------------------------------- hooks --------------------------------- */
 
@@ -70,11 +91,17 @@ function Reveal({ children, className = "", delay = 0 }) {
 
 /* --------------------------------- pieces --------------------------------- */
 
-function Logo({ compact = false }) {
+function Logo({ dark = false, compact = false }) {
+  const logoSrc = dark ? LOGOS.dark : LOGOS.light;
   return (
     <a href="#home" className="flex items-center gap-2.5" aria-label="FoundIT home">
       <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl border-2 border-ink bg-white shadow-brutal-sm dark:border-night-border dark:shadow-none">
-        <img src={founditIcon} alt="" className="h-full w-full object-contain p-1" />
+        <img
+          key={logoSrc}
+          src={logoSrc}
+          alt=""
+          className="themed-fade h-full w-full object-contain p-1"
+        />
       </span>
       {!compact && (
         <span className="text-xl font-extrabold tracking-tight">
@@ -120,7 +147,7 @@ function Phone({ image, alt, label, status }) {
           className="absolute left-1/2 top-2.5 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-slate-950"
         />
         <div className="phone-screen">
-          <img src={image} alt={alt} loading="lazy" className="shot" />
+          <img key={image} src={image} alt={alt} loading="lazy" className="shot themed-fade" />
         </div>
       </div>
       {(label || status) && (
@@ -190,7 +217,7 @@ function Navbar({ dark, onToggleTheme }) {
       }}
     >
       <nav className="shell flex min-h-[68px] items-center justify-between gap-4" aria-label="Primary">
-        <Logo />
+        <Logo dark={dark} />
         <div className="hidden items-center gap-7 lg:flex">
           {links.map(([label, id]) => (
             <a key={id} href={`#${id}`} className="nav-link" data-active={active === id}>
@@ -427,7 +454,7 @@ export default function App() {
                   className="absolute inset-x-6 top-8 h-[92%] -rotate-3 rounded-3xl border-2 border-ink bg-brand-light dark:border-night-border dark:bg-night-elevated"
                 />
                 <div className="relative">
-                  <Phone image={homeScreen} alt="FoundIT Android app home screen showing Lost and Found report options" />
+                  <Phone image={pickShot("home", dark)} alt="FoundIT Home screen" />
                   <div
                     className="brutal-accent absolute -bottom-3 -left-4 rounded-xl bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest dark:bg-night-surface dark:text-white sm:-left-8"
                   >
@@ -645,12 +672,12 @@ export default function App() {
             sub="Actual FoundIT screens — the same premium design language as the redesigned app. Additional views (Item Details, Notifications, Profile) share this system."
           />
           <div className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
-            <Reveal><Phone image={searchScreen} alt="FoundIT search screen with Lost and Found report listings" label="02 / Search" status="FOUND" /></Reveal>
-            <Reveal delay={70}><Phone image={lostScreen} alt="FoundIT report lost item form with photo upload" label="03 / Report lost" status="LOST" /></Reveal>
-            <Reveal delay={140}><Phone image={matchScreen} alt="FoundIT possible match view comparing lost and found reports" label="04 / Possible match" /></Reveal>
-            <Reveal><Phone image={messageScreen} alt="FoundIT messaging conversation to arrange an item return" label="05 / Messaging" /></Reveal>
-            <Reveal delay={70}><Phone image={reportsScreen} alt="FoundIT My Reports dashboard with active lost and found reports" label="06 / My reports" /></Reveal>
-            <Reveal delay={140}><Phone image={loginScreen} alt="FoundIT login screen" label="01 / Login" /></Reveal>
+            <Reveal><Phone image={pickShot("search", dark)} alt="FoundIT Search screen" label="02 / Search" status="FOUND" /></Reveal>
+            <Reveal delay={70}><Phone image={pickShot("lost", dark)} alt="FoundIT Lost item screen" label="03 / Report lost" status="LOST" /></Reveal>
+            <Reveal delay={140}><Phone image={matchScreen} alt="FoundIT Possible Match screen" label="04 / Possible match" /></Reveal>
+            <Reveal><Phone image={pickShot("message", dark)} alt="FoundIT Messages screen" label="05 / Messaging" /></Reveal>
+            <Reveal delay={70}><Phone image={pickShot("reports", dark)} alt="FoundIT My Reports screen" label="06 / My reports" /></Reveal>
+            <Reveal delay={140}><Phone image={pickShot("login", dark)} alt="FoundIT Login screen" label="01 / Login" /></Reveal>
           </div>
         </section>
 
@@ -668,17 +695,17 @@ export default function App() {
             <div className="mt-12 grid items-end justify-center gap-10 sm:grid-cols-3 sm:gap-6">
               <Reveal className="hidden sm:block">
                 <div className="scale-[.88] opacity-90">
-                  <Phone image={lostScreen} alt="FoundIT report screen on Android" label="Report" />
+                  <Phone image={pickShot("lost", dark)} alt="FoundIT Lost item screen" label="Report" />
                 </div>
               </Reveal>
               <Reveal delay={80}>
                 <div>
-                  <Phone image={homeScreen} alt="FoundIT home screen on Android" label="Home" status="FOUND" />
+                  <Phone image={pickShot("home", dark)} alt="FoundIT Home screen" label="Home" status="FOUND" />
                 </div>
               </Reveal>
               <Reveal delay={140} className="hidden sm:block">
                 <div className="scale-[.88] opacity-90">
-                  <Phone image={messageScreen} alt="FoundIT messages screen on Android" label="Messages" />
+                  <Phone image={pickShot("message", dark)} alt="FoundIT Messages screen" label="Messages" />
                 </div>
               </Reveal>
             </div>
@@ -786,7 +813,7 @@ export default function App() {
             <Reveal delay={100}>
               <aside className="card brutal-accent p-6 sm:p-7" aria-label="Release information">
                 <div className="flex items-center gap-3">
-                  <Logo compact />
+                  <Logo dark={dark} compact />
                   <span className="ml-auto"><Tag tone="blue">Android</Tag></span>
                 </div>
                 <p className="meta-label mt-6" style={{ color: "var(--primary)" }}>Release information</p>
@@ -872,7 +899,7 @@ export default function App() {
       <footer className="bg-night text-white" style={{ background: "#0B1020" }}>
         <div className="shell grid gap-8 py-12 md:grid-cols-3">
           <div>
-            <Logo />
+            <Logo dark={dark} />
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-300">
               Find what you&rsquo;ve lost. Return what you&rsquo;ve found.
             </p>

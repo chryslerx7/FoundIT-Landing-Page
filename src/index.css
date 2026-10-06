@@ -240,6 +240,19 @@
     transform: none;
   }
 
+  /* ---- theme-synchronized assets (150-300ms crossfade) ---- */
+  .themed-fade {
+    animation: themed-in 220ms ease;
+  }
+  @keyframes themed-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
   .nav-link {
     @apply relative font-mono text-[11px] font-bold uppercase tracking-[.14em] transition-colors duration-200;
     color: var(--muted);
@@ -275,5 +288,8 @@
   .reveal {
     opacity: 1;
     transform: none;
+  }
+  .themed-fade {
+    animation: none;
   }
 }
