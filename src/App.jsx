@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { APK_DOWNLOAD_URL, APP_VERSION, GITHUB_URL } from "./config";
 import homeScreen from "./public/Home.jpg";
 import founditIcon from "./public/foundit-icon.png";
@@ -9,874 +9,883 @@ import messageScreen from "./public/message.jpg";
 import reportsScreen from "./public/reports.jpg";
 import searchScreen from "./public/search.jpg";
 
-const Icon = ({ children, className = "" }) => (
-  <span
-    aria-hidden="true"
-    className={`inline-grid h-8 w-8 shrink-0 place-items-center border-2 border-current font-mono font-bold ${className}`}
-  >
-    {children}
-  </span>
-);
-function Logo() {
+/* ---------------------------------- hooks --------------------------------- */
+
+function useTheme() {
+  const [dark, setDark] = useState(() => {
+    try {
+      const saved = localStorage.getItem("foundit-theme");
+      if (saved) return saved === "dark";
+      return (
+        window.matchMedia &&
+        window.matchMedia("(prefers-color-scheme: dark)").matches
+      );
+    } catch {
+      return false;
+    }
+  });
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", dark);
+    try {
+      localStorage.setItem("foundit-theme", dark ? "dark" : "light");
+    } catch {
+      /* ignore */
+    }
+  }, [dark]);
+  return [dark, setDark];
+}
+
+function Reveal({ children, className = "", delay = 0 }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    ) {
+      el.classList.add("is-visible");
+      return;
+    }
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            el.classList.add("is-visible");
+            io.disconnect();
+          }
+        });
+      },
+      { threshold: 0.12 },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
   return (
-    <a
-      href="#home"
-      className="flex items-center gap-2 focus:outline-none focus:ring-4 focus:ring-blue-300"
-      aria-label="FoundIT home"
-    >
-      <span className="relative grid h-10 w-10 place-items-center overflow-hidden border-[3px] border-slate-950 bg-white shadow-[3px_3px_0_#0f172a]">
-        <img
-          src={founditIcon}
-          alt="FoundIT logo"
-          className="h-full w-full object-contain p-1"
-        />
+    <div ref={ref} className={`reveal ${className}`} style={{ transitionDelay: `${delay}ms` }}>
+      {children}
+    </div>
+  );
+}
+
+/* --------------------------------- pieces --------------------------------- */
+
+function Logo({ compact = false }) {
+  return (
+    <a href="#home" className="flex items-center gap-2.5" aria-label="FoundIT home">
+      <span className="grid h-10 w-10 place-items-center overflow-hidden rounded-xl border-2 border-ink bg-white shadow-brutal-sm dark:border-night-border dark:shadow-none">
+        <img src={founditIcon} alt="" className="h-full w-full object-contain p-1" />
       </span>
-      <span className="font-black text-xl tracking-[-.08em]">
-        Found<span className="text-blue-600">IT</span>
-      </span>
+      {!compact && (
+        <span className="text-xl font-extrabold tracking-tight">
+          Found<span style={{ color: "var(--primary)" }}>IT</span>
+        </span>
+      )}
     </a>
   );
 }
 
-function Button({ children, href, kind = "blue", className = "" }) {
-  const styles = {
-    blue: "bg-blue-600 text-white hover:bg-blue-700",
-    white: "bg-white text-slate-950 hover:bg-amber-200",
-    dark: "bg-slate-950 text-white hover:bg-slate-800",
-    green: "bg-green-600 text-white hover:bg-green-700",
+function Tag({ children, tone = "default" }) {
+  const tones = {
+    default: "border-line text-muted dark:border-night-border",
+    blue: "border-brand bg-brand-light text-brand-dark dark:border-night-border dark:bg-night-elevated dark:text-brand-accent",
+    red: "border-red-200 bg-red-50 text-lost dark:border-night-border dark:bg-night-elevated dark:text-lost-dark",
+    green:
+      "border-green-200 bg-green-50 text-found dark:border-night-border dark:bg-night-elevated dark:text-found-dark",
+    amber:
+      "border-amber-200 bg-amber-50 text-amber-700 dark:border-night-border dark:bg-night-elevated dark:text-amber-300",
+    solid: "border-ink bg-ink text-white dark:border-night-border dark:bg-night-elevated dark:text-white",
   };
+  return <span className={`tag ${tones[tone]}`}>{children}</span>;
+}
+
+function SectionHeader({ id, eyebrow, title, sub }) {
   return (
-    <a href={href} className={`btn ${styles[kind]} ${className}`}>
-      {children}
-      <span aria-hidden="true">→</span>
-    </a>
+    <Reveal>
+      <p className="eyebrow">{eyebrow}</p>
+      <h2 id={id} className="section-title">
+        {title}
+      </h2>
+      {sub && <p className="section-sub">{sub}</p>}
+    </Reveal>
   );
 }
-function SectionHeader({ label, title, titleClassName = "", children }) {
+
+function Phone({ image, alt, label, status }) {
   return (
-    <div className="max-w-3xl">
-      <p className="eyebrow">// {label}</p>
-      <h2 className={`section-title ${titleClassName}`}>{title}</h2>
-      {children && (
-        <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600 sm:text-lg">
-          {children}
-        </p>
+    <div>
+      <div className="phone">
+        <div
+          aria-hidden="true"
+          className="absolute left-1/2 top-2.5 z-10 h-5 w-20 -translate-x-1/2 rounded-full bg-slate-950"
+        />
+        <div className="phone-screen">
+          <img src={image} alt={alt} loading="lazy" className="shot" />
+        </div>
+      </div>
+      {(label || status) && (
+        <div className="mt-4 flex items-center justify-center gap-2">
+          {label && (
+            <p className="meta-label" style={{ color: "var(--muted)" }}>
+              {label}
+            </p>
+          )}
+          {status && <Tag tone={status === "LOST" ? "red" : status === "FOUND" ? "green" : "blue"}>{status}</Tag>}
+        </div>
       )}
     </div>
   );
 }
-function Badge({ children, tone = "blue" }) {
-  const tones = {
-    blue: "border-blue-700 bg-blue-100 text-blue-800",
-    red: "border-red-700 bg-red-100 text-red-800",
-    green: "border-green-700 bg-green-100 text-green-800",
-    amber: "border-amber-700 bg-amber-100 text-amber-900",
-  };
+
+/* Compact consistent SVG icon set (no giant emoji icons) */
+function FIcon({ d }) {
   return (
-    <span
-      className={`inline-flex border-2 px-2 py-1 font-mono text-[11px] font-bold uppercase ${tones[tone]}`}
-    >
-      {children}
-    </span>
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className="h-5 w-5">
+      <path d={d} stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
   );
 }
-function PhoneMockup({ screen = "home", image, alt }) {
-  const isLogin = screen === "login",
-    isSearch = screen === "search",
-    isReport = screen === "report",
-    isMatch = screen === "match",
-    isMessage = screen === "message",
-    isProfile = screen === "profile";
-  return (
-    <div className="phone">
-      <div className="absolute left-1/2 top-2 z-10 h-5 w-20 -translate-x-1/2 rounded-b-xl bg-slate-950" />
-      <div className="phone-screen overflow-hidden font-sans text-[10px]">
-        {image ? (
-          <div className="relative h-full w-full bg-[#eff6ff]">
-            <img
-              src={image}
-              alt={alt || `${screen} screen preview`}
-              className="pixelated-screen h-full w-full object-contain object-top"
-            />
-            <div
-              aria-hidden="true"
-              className="screen-pixel-overlay pointer-events-none absolute inset-0 opacity-35"
-            />
-          </div>
-        ) : (
-          <div className="p-4 pt-9">
-            {isLogin ? (
-            <>
-              <div className="mt-9 text-center">
-                <div className="mx-auto grid h-14 w-14 place-items-center border-[3px] border-slate-950 bg-blue-600 text-3xl text-white">
-                ⌕
-              </div>
-              <h3 className="mt-4 text-xl font-black">Welcome back.</h3>
-              <p className="mt-1 text-slate-500">Campus items, one place.</p>
-            </div>
-            <div className="mt-8 space-y-3">
-              <input
-                aria-label="Email address example"
-                placeholder="email@campus.edu"
-                className="w-full border-2 border-slate-900 bg-white p-3 outline-none"
-              />
-              <input
-                aria-label="Password example"
-                placeholder="••••••••"
-                className="w-full border-2 border-slate-900 bg-white p-3 outline-none"
-              />
-              <button className="w-full border-2 border-slate-950 bg-blue-600 p-3 font-bold text-white">
-                LOG IN
-              </button>
-            </div>
-          </>
-        ) : isSearch ? (
-          <>
-            <Top title="Search items" />
-            <div className="mt-3 border-2 border-slate-900 bg-white p-2 text-slate-400">
-              ⌕ &nbsp; keys, wallet, ID...
-            </div>
-            <div className="mt-3 flex gap-1">
-              <Badge tone="red">LOST</Badge>
-              <Badge>ALL CAMPUS</Badge>
-            </div>
-            <Item
-              color="bg-red-500"
-              name="Black wallet"
-              place="Student Center"
-            />
-            <Item color="bg-amber-400" name="Blue umbrella" place="Library" />
-          </>
-        ) : isReport ? (
-          <>
-            <Top title="Report a lost item" />
-            <label className="mt-4 block font-bold">
-              Item name
-              <input
-                placeholder="e.g. Blue backpack"
-                className="mt-1 w-full border-2 border-slate-900 bg-white p-2"
-              />
-            </label>
-            <div className="mt-3 grid h-20 place-items-center border-2 border-dashed border-slate-800 bg-white font-mono">
-              + ADD PHOTO
-            </div>
-            <label className="mt-3 block font-bold">
-              Last seen
-              <input
-                placeholder="Campus location"
-                className="mt-1 w-full border-2 border-slate-900 bg-white p-2"
-              />
-            </label>
-            <button className="mt-4 w-full border-2 border-slate-950 bg-red-600 p-3 font-bold text-white">
-              POST LOST REPORT
-            </button>
-          </>
-        ) : isMatch ? (
-          <>
-            <Top title="Possible match" />
-            <Badge tone="amber">MATCH SCORE: HIGH</Badge>
-            <div className="mt-4 border-2 border-slate-950 bg-white p-3">
-              <p className="font-bold">Your report</p>
-              <Item color="bg-red-500" name="Black wallet" place="Library" />
-            </div>
-            <p className="my-3 text-center font-black">≋ POSSIBLE MATCH ≋</p>
-            <div className="border-2 border-slate-950 bg-green-50 p-3">
-              <p className="font-bold">Found report</p>
-              <Item
-                color="bg-green-500"
-                name="Leather wallet"
-                place="Library"
-              />
-            </div>
-            <button className="mt-4 w-full border-2 border-slate-950 bg-blue-600 p-3 font-bold text-white">
-              CONTACT REPORTER
-            </button>
-          </>
-        ) : isMessage ? (
-          <>
-            <Top title="Messages" />
-            <p className="mt-4 text-center font-mono text-[9px] text-slate-500">
-              TODAY · 10:42 AM
-            </p>
-            <div className="mt-4 ml-8 bg-white p-3">
-              Hi! I think I found your wallet.
-            </div>
-            <div className="ml-auto mt-3 mr-0 w-4/5 bg-blue-600 p-3 text-white">
-              That sounds like mine — can I see it?
-            </div>
-            <div className="mt-3 ml-8 bg-white p-3">
-              Sure. Meet at the library desk?
-            </div>
-            <div className="absolute bottom-4 left-4 right-4 border-2 border-slate-900 bg-white p-2 text-slate-400">
-              Write a message...{" "}
-              <b className="float-right text-blue-600">SEND</b>
-            </div>
-          </>
-        ) : isProfile ? (
-          <>
-            <Top title="My reports" />
-            <div className="mt-4 flex items-center gap-3 border-2 border-slate-950 bg-white p-3">
-              <div className="grid h-11 w-11 place-items-center bg-blue-600 text-xl text-white">
-                J
-              </div>
-              <div>
-                <b>Jamie Rivera</b>
-                <p className="text-slate-500">Computer Science</p>
-              </div>
-            </div>
-            <p className="mt-5 font-mono font-bold">ACTIVE REPORTS (02)</p>
-            <Item
-              color="bg-red-500"
-              name="Black wallet"
-              place="Lost · Library"
-            />
-            <Item
-              color="bg-green-500"
-              name="USB drive"
-              place="Found · Lab 204"
-            />
-          </>
-        ) : (
-          <>
-            <Top title="Good morning, Jamie." />
-            <div className="mt-3 bg-blue-600 p-4 text-white">
-              <span className="font-mono text-[9px]">
-                CAMPUS NETWORK · ONLINE
-              </span>
-              <h3 className="mt-2 text-xl font-black leading-none">
-                What are you looking for?
-              </h3>
-            </div>
-            <div className="mt-3 grid grid-cols-2 gap-2">
-              <div className="border-2 border-slate-950 bg-red-100 p-3">
-                <b>LOST</b>
-                <p className="mt-2">Report an item</p>
-              </div>
-              <div className="border-2 border-slate-950 bg-green-100 p-3">
-                <b>FOUND</b>
-                <p className="mt-2">Help return it</p>
-              </div>
-            </div>
-            <p className="mt-4 font-mono font-bold">RECENT ACTIVITY</p>
-            <Item
-              color="bg-amber-400"
-              name="Blue umbrella"
-              place="Found · Library"
-            />
-              <Item
-                color="bg-red-500"
-                name="Student ID card"
-                place="Lost · Cafeteria"
-              />
-            </>
-          )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-function Top({ title }) {
-  return (
-    <div className="flex items-center justify-between">
-      <b className="text-sm">{title}</b>
-      <span className="grid h-6 w-6 place-items-center border-2 border-slate-950 bg-white">
-        ⌕
-      </span>
-    </div>
-  );
-}
-function Item({ color, name, place }) {
-  return (
-    <div className="mt-3 flex items-center gap-2 border-b border-slate-300 pb-2">
-      <span
-        className={`grid h-9 w-9 place-items-center border-2 border-slate-950 ${color}`}
-      >
-        ●
-      </span>
-      <div>
-        <b>{name}</b>
-        <p className="text-slate-500">{place}</p>
-      </div>
-      <span className="ml-auto">›</span>
-    </div>
-  );
-}
-function Navbar() {
+const ICONS = {
+  search: "M11 4a7 7 0 1 0 4.9 12L21 21l-1.4 1.4-5.1-5.1A7 7 0 0 0 11 4Zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10Z",
+  photos:
+    "M4 7h3l2-2h6l2 2h3v12H4V7Zm4 6a4 4 0 1 0 8 0 4 4 0 0 0-8 0Zm4-2.5A2.5 2.5 0 1 1 12 15a2.5 2.5 0 0 1 0-4.5Z",
+  pin: "M12 21s-6.5-5.2-6.5-10A6.5 6.5 0 0 1 12 4.5 6.5 6.5 0 0 1 18.5 11c0 4.8-6.5 10-6.5 10Zm0-7.5A2.5 2.5 0 1 0 12 8.5a2.5 2.5 0 0 0 0 5Z",
+  match:
+    "M7 4h4v4H7zM13 4h4v4h-4zM7 10h4v4H7zM13 10h4v4h-4zM7 16h4v4H7zM13 16h4v4h-4z",
+  chat: "M4 5h16v11H9l-5 4V5Zm4 4v2m3-2v2m3-2v2",
+  board: "M5 5h14v14H5zM9 9h6m-6 3.5h6M9 16h3",
+  bell: "M6 16v-5a6 6 0 1 1 12 0v5l1.5 2.5h-15L6 16Zm4.5 5a1.8 1.8 0 0 0 3 0",
+  moon: "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5Z",
+};
+
+function Navbar({ dark, onToggleTheme }) {
   const [open, setOpen] = useState(false);
+  const [active, setActive] = useState("home");
   const links = [
-    ["Home", "#home"],
-    ["Features", "#features"],
-    ["How It Works", "#how"],
-    ["Screens", "#screens"],
-    ["Download", "#download"],
+    ["Home", "home"],
+    ["Features", "features"],
+    ["How It Works", "how"],
+    ["Screenshots", "screens"],
+    ["Download", "download"],
   ];
+  useEffect(() => {
+    const onScroll = () => {
+      const ids = ["home", "features", "how", "screens", "download"];
+      let current = "home";
+      for (const id of ids) {
+        const el = document.getElementById(id);
+        if (el && el.getBoundingClientRect().top < 140) current = id;
+      }
+      setActive(current);
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
   return (
-    <header className="sticky top-0 z-50 border-b-[3px] border-slate-950 bg-slate-50/95 backdrop-blur">
-      <nav className="shell flex min-h-[72px] items-center justify-between gap-5">
+    <header
+      className="sticky top-0 z-50 border-b backdrop-blur-md"
+      style={{
+        background: "color-mix(in srgb, var(--surface) 88%, transparent)",
+        borderColor: "var(--border)",
+      }}
+    >
+      <nav className="shell flex min-h-[68px] items-center justify-between gap-4" aria-label="Primary">
         <Logo />
-        <div className="hidden items-center gap-6 md:flex">
-          {links.map(([n, h]) => (
-            <a
-              className="font-mono text-xs font-bold uppercase hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              href={h}
-              key={n}
-            >
-              {n}
+        <div className="hidden items-center gap-7 lg:flex">
+          {links.map(([label, id]) => (
+            <a key={id} href={`#${id}`} className="nav-link" data-active={active === id}>
+              {label}
             </a>
           ))}
         </div>
-        <Button href={APK_DOWNLOAD_URL} className="hidden md:inline-flex">
-          Download app
-        </Button>
-        <button
-          onClick={() => setOpen(!open)}
-          aria-label="Toggle navigation"
-          aria-expanded={open}
-          className="grid h-10 w-10 place-items-center border-[3px] border-slate-950 bg-white text-xl md:hidden"
-        >
-          {open ? "×" : "☰"}
-        </button>
+        <div className="hidden items-center gap-3 lg:flex">
+          <button
+            onClick={() => onToggleTheme(!dark)}
+            className="btn btn-secondary !min-h-[44px] !rounded-xl !px-4"
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+            title={dark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <span aria-hidden="true">{dark ? "☀" : "☾"}</span>
+            <span className="meta-label">{dark ? "Light" : "Dark"}</span>
+          </button>
+          <a href={APK_DOWNLOAD_URL} className="btn btn-primary !min-h-[44px]">
+            Get FoundIT <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div className="flex items-center gap-2 lg:hidden">
+          <button
+            onClick={() => onToggleTheme(!dark)}
+            className="grid h-10 w-10 place-items-center rounded-xl border text-lg"
+            style={{ borderColor: "var(--border)", background: "var(--surface)" }}
+            aria-label={dark ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            <span aria-hidden="true">{dark ? "☀" : "☾"}</span>
+          </button>
+          <button
+            onClick={() => setOpen(!open)}
+            aria-label="Toggle navigation menu"
+            aria-expanded={open}
+            className="grid h-10 w-10 place-items-center rounded-xl border-2 border-ink bg-white text-xl font-bold dark:border-night-border dark:bg-night-surface dark:text-white"
+          >
+            {open ? "×" : "☰"}
+          </button>
+        </div>
       </nav>
       {open && (
-        <div className="border-t-[3px] border-slate-950 bg-white p-5 md:hidden">
-          <div className="shell grid gap-3">
-            {links.map(([n, h]) => (
+        <div className="border-t px-5 py-4 lg:hidden" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <div className="grid gap-2">
+            {links.map(([label, id]) => (
               <a
+                key={id}
                 onClick={() => setOpen(false)}
-                className="border-2 border-slate-950 p-3 font-mono font-bold"
-                href={h}
-                key={n}
+                href={`#${id}`}
+                className="rounded-xl border px-4 py-3 font-mono text-xs font-bold uppercase tracking-widest"
+                style={{ borderColor: "var(--border)" }}
               >
-                {n}
+                {label}
               </a>
             ))}
-            <Button href={APK_DOWNLOAD_URL}>Download app</Button>
+            <a href={APK_DOWNLOAD_URL} className="btn btn-primary mt-1">
+              Get FoundIT <span aria-hidden="true">→</span>
+            </a>
           </div>
         </div>
       )}
     </header>
   );
 }
-const features = [
-  [
-    "01",
-    "REPORT LOST ITEMS",
-    "Report belongings with photos, descriptions, dates and locations.",
-    "⌁",
-  ],
-  [
-    "02",
-    "REPORT FOUND ITEMS",
-    "Give found belongings a clear route back to their owner.",
-    "+",
-  ],
-  [
-    "03",
-    "SMART POSSIBLE MATCHES",
-    "Surface likely matches between lost and found reports.",
-    "⌕",
-  ],
-  [
-    "04",
-    "SEARCH & FILTER",
-    "Browse by item, category, location and report status.",
-    "↯",
-  ],
-  ["05", "MESSAGING", "Talk directly when a possible match appears.", "✉"],
-  ["06", "MY REPORTS", "Manage every report from one clear dashboard.", "▣"],
-  [
-    "07",
-    "NOTIFICATIONS",
-    "Get timely updates about report activity and matches.",
-    "!",
-  ],
-  ["08", "RESOLVE ITEMS", "Close the loop when an item makes it home.", "✓"],
+
+/* ---------------------------------- data ---------------------------------- */
+
+const FEATURES = [
+  {
+    key: "search",
+    title: "Smart Search",
+    text: "Find reports by item, category, location, and date.",
+  },
+  {
+    key: "photos",
+    title: "Multiple Photos",
+    text: "Add up to five photos to help identify an item.",
+  },
+  {
+    key: "pin",
+    title: "Campus Locations",
+    text: "Provide useful location information for lost and found reports.",
+  },
+  {
+    key: "match",
+    title: "Possible Matches",
+    text: "Discover items that may match a lost report.",
+  },
+  {
+    key: "chat",
+    title: "Messaging",
+    text: "Contact other users through the existing FoundIT messaging system.",
+  },
+  {
+    key: "board",
+    title: "Report Tracking",
+    text: "Manage Lost, Found, and Resolved reports.",
+  },
+  {
+    key: "bell",
+    title: "Notifications",
+    text: "Stay informed about matches and report activity.",
+  },
+  {
+    key: "moon",
+    title: "Light & Dark Mode",
+    text: "Use FoundIT comfortably in different environments.",
+  },
 ];
-const faqs = [
-  [
-    "What is FoundIT?",
-    "FoundIT is a campus-based Android app for reporting, searching and returning lost belongings.",
-  ],
-  [
-    "Who can use FoundIT?",
-    "It is designed for college and university students and their campus communities.",
-  ],
-  [
-    "Is FoundIT free?",
-    "Yes. FoundIT is a student project made to make campus lost and found easier.",
-  ],
-  [
-    "What Android devices are supported?",
-    "FoundIT is currently available for Android devices. Check the release notes for the latest compatibility details.",
-  ],
-  [
-    "How do possible matches work?",
-    "FoundIT helps identify reports that may describe the same item, then lets students contact each other.",
-  ],
-  [
-    "Where can I download the app?",
-    "Use any Download APK button on this page once the release URL has been configured.",
-  ],
+
+const SOLUTION_POINTS = [
+  "Report lost items",
+  "Report found items",
+  "Search campus reports",
+  "Discover possible matches",
+  "Contact reporters",
+  "Track your reports",
+  "Resolve recovered items",
 ];
+
+const STEPS = [
+  ["01", "Report", "Tell the campus community what was lost or found."],
+  ["02", "Search", "Browse reports using useful filters."],
+  ["03", "Match", "Discover possible matches."],
+  ["04", "Recover", "Contact the other user and resolve the report."],
+];
+
+const FAQS = [
+  ["What is FoundIT?", "FoundIT is a campus Lost & Found application for students — report, search, match, and recover belongings in one place."],
+  ["Can I report something I found?", "Yes. Create a Found report with the item details, location, and photos so its owner can reach you."],
+  ["Can I upload photos?", "Yes, up to five photos per report to help identify the item."],
+  ["Can I search by date?", "Yes. Filter campus reports by item, category, location, and date."],
+  ["Can I contact the person who reported an item?", "Yes, through the existing messaging functionality where applicable."],
+  ["Does FoundIT support dark mode?", "Yes. Both the Android app and this site support comfortable Light and Dark modes."],
+];
+
 function FAQ() {
-  const [active, setActive] = useState(null);
+  const [active, setActive] = useState(0);
   return (
-    <div className="mt-10 grid gap-3">
-      {faqs.map(([q, a], i) => (
-        <div className="brutal-sm bg-white" key={q}>
-          <button
-            onClick={() => setActive(active === i ? null : i)}
-            className="flex w-full items-center justify-between gap-5 p-4 text-left font-bold focus:outline-none focus:ring-4 focus:ring-blue-300"
-            aria-expanded={active === i}
-          >
-            <span>{q}</span>
-            <span className="text-2xl">{active === i ? "−" : "+"}</span>
-          </button>
-          {active === i && (
-            <p className="border-t-2 border-slate-950 p-4 pt-3 leading-7 text-slate-600">
-              {a}
-            </p>
-          )}
-        </div>
-      ))}
+    <div className="mt-8 grid gap-3">
+      {FAQS.map(([q, a], i) => {
+        const open = active === i;
+        return (
+          <div key={q} className="card overflow-hidden !rounded-2xl">
+            <button
+              onClick={() => setActive(open ? -1 : i)}
+              aria-expanded={open}
+              className="flex w-full items-center justify-between gap-4 p-5 text-left font-bold"
+            >
+              <span>{q}</span>
+              <span
+                aria-hidden="true"
+                className="grid h-8 w-8 shrink-0 place-items-center rounded-lg border text-lg leading-none"
+                style={{
+                  borderColor: "var(--border)",
+                  background: open ? "var(--primary)" : "transparent",
+                  color: open ? "#fff" : "var(--primary)",
+                }}
+              >
+                {open ? "−" : "+"}
+              </span>
+            </button>
+            {open && (
+              <p className="border-t px-5 py-4 leading-7" style={{ borderColor: "var(--divider)", color: "var(--muted)" }}>
+                {a}
+              </p>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
-function App() {
+
+/* ----------------------------------- app ----------------------------------- */
+
+export default function App() {
+  const [dark, setDark] = useTheme();
+
   return (
     <>
-      <Navbar />
-      <main>
-        <section
-          id="home"
-          className="grid-paper overflow-hidden border-b-[3px] border-slate-950"
-        >
-          <div className="shell grid min-h-[720px] items-center gap-12 py-16 lg:grid-cols-[1.15fr_.85fr] lg:py-20">
-            <div>
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-brand focus:px-4 focus:py-2 focus:text-white"
+      >
+        Skip to content
+      </a>
+      <Navbar dark={dark} onToggleTheme={setDark} />
+
+      <main id="main">
+        {/* ------------------------------- HERO ------------------------------- */}
+        <section id="home" className="grid-paper overflow-hidden border-b" style={{ borderColor: "var(--border)" }}>
+          <div className="shell grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-[1.1fr_.9fr] lg:py-24">
+            <Reveal>
               <div className="flex flex-wrap gap-2">
-                <Badge>STATUS: ONLINE</Badge>
-                <Badge tone="amber">CAMPUS NETWORK</Badge>
-                <Badge tone="green">ANDROID APP</Badge>
+                <Tag tone="blue">● Campus network</Tag>
+                <Tag tone="default">Found / Campus</Tag>
+                <Tag tone="default">Android app</Tag>
               </div>
-              <h1 className="mt-7 font-black uppercase leading-[.83] tracking-[-.08em] text-slate-950 text-[clamp(3.1rem,9vw,7.6rem)]">
-                Lost
+              <h1
+                className="mt-6 font-extrabold tracking-tight text-balance"
+                style={{ fontSize: "clamp(2.4rem, 5.6vw, 4.6rem)", lineHeight: 1.04 }}
+              >
+                Find what you&rsquo;ve lost.
                 <br />
-                something?
-                <br />
-                <span className="text-blue-600">Found</span> something?
+                <span style={{ color: "var(--primary)" }}>Return what you&rsquo;ve found.</span>
               </h1>
-              <p className="mt-7 max-w-xl text-lg font-semibold leading-8 sm:text-xl">
-                FoundIT makes campus Lost &amp; Found simple.
+              <p className="mt-5 max-w-xl text-lg leading-8" style={{ color: "var(--muted)" }}>
+                FoundIT is a campus Lost &amp; Found platform that helps students
+                report, discover, match, and recover lost belongings.
               </p>
-              <p className="mt-2 max-w-lg font-mono text-sm leading-6 text-slate-600">
-                Find what you've lost. Return what you've found.
-              </p>
-              <div className="mt-8 flex flex-col gap-4 sm:flex-row">
-                <Button href={APK_DOWNLOAD_URL}>Download FoundIT</Button>
-                <Button href="#features" kind="white">
-                  Explore features
-                </Button>
-              </div>
-              <p className="mt-8 font-mono text-xs font-bold">
-                &gt; SYSTEM READY_ &nbsp;{" "}
-                <span className="text-red-600">LOST: 12</span> /{" "}
-                <span className="text-green-700">FOUND: 08</span>
-              </p>
-            </div>
-            <div className="relative py-7">
-              <div className="absolute inset-x-0 top-10 h-[90%] -rotate-3 border-[3px] border-slate-950 bg-amber-300" />
-              <div className="relative">
-                <PhoneMockup image={homeScreen} alt="FoundIT home screen preview" />
-                <div className="absolute -bottom-2 -left-2 brutal bg-white p-3 font-mono text-xs font-bold">
-                  HOME.SCREEN
-                  <br />
-                  <span className="text-blue-600">LIVE PREVIEW</span>
-                </div>
-                <div className="absolute -right-2 top-12 brutal-sm bg-green-400 p-2 font-mono text-[10px] font-bold">
-                  ● FOUND
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-        <section className="shell py-20 sm:py-28">
-          <SectionHeader label="THE PROBLEM" title="Lost on campus?">
-            Your missing item should not depend on a scattered post, a lucky
-            sighting or a group chat you never saw.
-          </SectionHeader>
-          <div className="mt-12 grid gap-5 md:grid-cols-3">
-            {[
-              [
-                "01",
-                "WHERE DID I SEE IT?",
-                "A busy campus makes the last known location hard to trace.",
-              ],
-              [
-                "02",
-                "WHO FOUND IT?",
-                "Good intentions get lost when reports have no central place.",
-              ],
-              [
-                "03",
-                "HOW DO I GET IT BACK?",
-                "The right owner and finder need a simple way to connect.",
-              ],
-            ].map(([n, t, p]) => (
-              <article className="brutal bg-white p-6" key={n}>
-                <p className="font-pixel text-lg text-red-600">{n}</p>
-                <h3 className="mt-8 text-2xl font-black uppercase leading-none">
-                  {t}
-                </h3>
-                <p className="mt-4 leading-7 text-slate-600">{p}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-        <section className="border-y-[3px] border-slate-950 bg-blue-600 py-20 text-white">
-          <div className="shell">
-            <SectionHeader label="THE SOLUTION" title="Meet FoundIT.">
-              <span className="text-blue-100">
-                One campus. One place for lost and found items.
-              </span>
-            </SectionHeader>
-            <div className="mt-12 grid gap-3 border-[3px] border-slate-950 bg-white p-4 text-slate-950 md:grid-cols-4 md:p-5">
-              {["LOST", "MATCH", "CONTACT", "RETURNED"].map((x, i) => (
-                <div
-                  className="flex items-center justify-between border-2 border-slate-950 p-5 md:block"
-                  key={x}
-                >
-                  <span className="font-pixel text-base sm:text-lg">{x}</span>
-                  {i < 3 && (
-                    <span className="text-3xl md:mt-8 md:block">→</span>
-                  )}
-                  <p className="mt-2 font-mono text-xs text-slate-500">
-                    0{i + 1}. CAMPUS FLOW
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        <section id="features" className="shell py-20 sm:py-28">
-          <SectionHeader label="CORE TOOLS" title="Built for campus.">
-            Everything students need to turn a missing-item moment into a
-            return.
-          </SectionHeader>
-          <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map(([n, t, p, i], idx) => (
-              <article
-                className={`brutal relative min-h-[245px] p-5 ${idx === 2 ? "bg-amber-300" : idx === 5 ? "bg-blue-600 text-white" : "bg-white"}`}
-                key={n}
-              >
-                <span className="absolute right-4 top-3 text-3xl font-black opacity-80">
-                  {i}
-                </span>
-                <p className="font-mono text-xs font-bold">FEATURE_{n}</p>
-                <h3 className="mt-10 text-xl font-black uppercase leading-none">
-                  {t}
-                </h3>
-                <p
-                  className={`mt-4 text-sm leading-6 ${idx === 5 ? "text-blue-100" : "text-slate-600"}`}
-                >
-                  {p}
-                </p>
-              </article>
-            ))}
-          </div>
-        </section>
-        <section
-          id="how"
-          className="border-y-[3px] border-slate-950 bg-amber-300 py-20"
-        >
-          <div className="shell">
-            <SectionHeader label="SIMPLE BY DESIGN" title="How FoundIT works" />
-            <div className="mt-12 grid gap-0 md:grid-cols-4">
-              {[
-                ["01", "REPORT", "Lost something? Create a Lost Report."],
-                ["02", "SEARCH", "Browse Lost and Found reports."],
-                ["03", "MATCH", "FoundIT spots possible connections."],
-                ["04", "RETURN", "Contact the user and return the item."],
-              ].map(([n, t, p], i) => (
-                <div
-                  className="relative border-[3px] border-slate-950 bg-white p-6"
-                  key={n}
-                >
-                  <p className="font-pixel text-2xl text-blue-600">{n}</p>
-                  <h3 className="mt-9 text-2xl font-black">{t}</h3>
-                  <p className="mt-3 leading-6 text-slate-600">{p}</p>
-                  {i < 3 && (
-                    <span className="absolute -bottom-5 left-1/2 z-10 grid h-10 w-10 -translate-x-1/2 place-items-center border-2 border-slate-950 bg-blue-600 text-xl text-white md:-right-5 md:bottom-auto md:left-auto md:top-1/2 md:-translate-y-1/2">
-                      →
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        <section id="screens" className="shell py-20 sm:py-28">
-          <SectionHeader label="ANDROID INTERFACE" title="Inside the app">
-            A focused interface for the moments when you need it most.
-          </SectionHeader>
-          <div className="mt-12 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-            <div>
-              <PhoneMockup
-                screen="login"
-                image={loginScreen}
-                alt="FoundIT login screen preview"
-              />
-              <p className="mt-5 text-center font-mono text-xs font-bold">
-                01 / LOGIN
-              </p>
-            </div>
-            <div>
-              <PhoneMockup
-                screen="search"
-                image={searchScreen}
-                alt="FoundIT search screen preview"
-              />
-              <p className="mt-5 text-center font-mono text-xs font-bold">
-                02 / SEARCH
-              </p>
-            </div>
-            <div>
-              <PhoneMockup
-                screen="report"
-                image={lostScreen}
-                alt="FoundIT lost report screen preview"
-              />
-              <p className="mt-5 text-center font-mono text-xs font-bold">
-                03 / REPORT LOST
-              </p>
-            </div>
-            <div>
-              <PhoneMockup
-                screen="match"
-                image={matchScreen}
-                alt="FoundIT possible match screen preview"
-              />
-              <p className="mt-5 text-center font-mono text-xs font-bold">
-                04 / POSSIBLE MATCH
-              </p>
-            </div>
-            <div>
-              <PhoneMockup
-                screen="message"
-                image={messageScreen}
-                alt="FoundIT messaging screen preview"
-              />
-              <p className="mt-5 text-center font-mono text-xs font-bold">
-                05 / MESSAGING
-              </p>
-            </div>
-            <div>
-              <PhoneMockup
-                screen="profile"
-                image={reportsScreen}
-                alt="FoundIT my reports screen preview"
-              />
-              <p className="mt-5 text-center font-mono text-xs font-bold">
-                06 / MY REPORTS
-              </p>
-            </div>
-          </div>
-          <p className="mt-10 font-mono text-xs text-slate-500">
-            MORE VIEWS: HOME · REPORT FOUND · ITEM DETAILS · NOTIFICATIONS ·
-            PROFILE
-          </p>
-        </section>
-        <section className="border-y-[3px] border-slate-950">
-          <div className="grid md:grid-cols-2">
-            <article className="bg-red-600 p-8 text-white sm:p-14">
-              <Badge tone="red">STATUS: LOST</Badge>
-              <h2 className="mt-6 text-6xl font-black uppercase tracking-[-.08em]">
-                Lost
-              </h2>
-              <p className="mt-4 text-xl font-bold">“I lost something.”</p>
-              <p className="mt-3 max-w-md leading-7 text-red-100">
-                Create a report with what, when and where. Let campus help look.
-              </p>
-            </article>
-            <article className="bg-green-600 p-8 text-white sm:p-14">
-              <Badge tone="green">STATUS: FOUND</Badge>
-              <h2 className="mt-6 text-6xl font-black uppercase tracking-[-.08em]">
-                Found
-              </h2>
-              <p className="mt-4 text-xl font-bold">“I found something.”</p>
-              <p className="mt-3 max-w-md leading-7 text-green-100">
-                Post the item and give its owner a direct path to it.
-              </p>
-            </article>
-          </div>
-        </section>
-        <section className="shell py-20 sm:py-28">
-          <SectionHeader label="CAMPUS COMMUNITY" title="Built for students.">
-            FoundIT is designed around the way students actually move around
-            campus — classrooms, libraries, cafeterias, laboratories, halls and
-            common areas.
-          </SectionHeader>
-          <div className="mt-10 flex flex-wrap gap-3">
-            {[
-              "LIBRARY",
-              "CAFETERIA",
-              "CLASSROOM",
-              "LABORATORY",
-              "STUDENT CENTER",
-            ].map((x, i) => (
-              <span
-                className={`brutal-sm px-5 py-4 font-pixel text-[10px] ${i % 2 ? "bg-amber-300" : "bg-white"}`}
-                key={x}
-              >
-                ⌖ {x}
-              </span>
-            ))}
-          </div>
-        </section>
-        <section className="bg-slate-950 py-20 text-white">
-          <div className="shell">
-            <SectionHeader
-              label="HCI / UI DESIGN"
-              title="Designed with people in mind."
-              titleClassName="text-white"
-            >
-              <span className="text-slate-300">
-                Quietly practical choices that make finding and returning feel
-                straightforward.
-              </span>
-            </SectionHeader>
-            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              {[
-                "CLEAR NAVIGATION",
-                "CONSISTENT UI",
-                "RECOGNITION OVER RECALL",
-                "ACCESSIBLE TOUCH TARGETS",
-                "CLEAR SYSTEM STATUS",
-                "ERROR PREVENTION",
-                "FEEDBACK",
-                "ACCESSIBLE CONTRAST",
-                "LOW COGNITIVE LOAD",
-                "MOBILE-FIRST",
-              ].map((x, i) => (
-                <div
-                  className="border-2 border-white bg-slate-900 p-4 font-mono text-xs font-bold"
-                  key={x}
-                >
-                  <span className="mr-2 text-blue-400">0{i + 1}</span>
-                  {x}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-        <section
-          id="download"
-          className="grid-paper border-y-[3px] border-slate-950 py-20 sm:py-28"
-        >
-          <div className="shell grid items-center gap-10 lg:grid-cols-[1fr_.8fr]">
-            <div>
-              <SectionHeader label="ANDROID DOWNLOAD" title="Ready to find it?">
-                Download FoundIT for Android.
-              </SectionHeader>
-              <div className="mt-8">
-                <Button href={APK_DOWNLOAD_URL} className="text-base">
-                  Download APK
-                </Button>
-                <a
-                  className="ml-4 inline-block border-b-2 border-slate-950 pb-1 font-mono text-sm font-bold hover:text-blue-600"
-                  href={GITHUB_URL}
-                >
-                  VIEW ON GITHUB ↗
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <a href={APK_DOWNLOAD_URL} className="btn btn-primary text-base">
+                  Download FoundIT <span aria-hidden="true">→</span>
+                </a>
+                <a href="#features" className="btn btn-secondary">
+                  Explore Features
                 </a>
               </div>
-            </div>
-            <aside className="brutal bg-white p-6">
-              <div className="flex items-center gap-3">
-                <Logo />
-                <span className="ml-auto">
-                  <Badge>ANDROID</Badge>
+              <div className="mt-8 flex flex-wrap items-center gap-x-5 gap-y-2 font-mono text-[11px] font-bold uppercase tracking-[.14em]" style={{ color: "var(--muted)" }}>
+                <span>Match status / Active</span>
+                <span aria-hidden="true" className="h-1 w-1 rounded-full bg-current opacity-40" />
+                <span>
+                  <span className="text-lost dark:text-lost-dark">Lost: 12</span> · <span className="text-found dark:text-found-dark">Found: 08</span>
                 </span>
+                <span aria-hidden="true" className="h-1 w-1 rounded-full bg-current opacity-40" />
+                <span>{APP_VERSION}</span>
               </div>
-              <p className="mt-7 font-mono text-xs font-bold text-blue-700">
-                RELEASE INFORMATION
-              </p>
-              <dl className="mt-3 divide-y-2 divide-slate-950 border-y-2 border-slate-950 font-mono text-sm">
-                <div className="flex justify-between py-3">
-                  <dt>VERSION</dt>
-                  <dd>{APP_VERSION}</dd>
+            </Reveal>
+
+            <Reveal delay={120}>
+              <div className="relative mx-auto max-w-[340px] py-4">
+                <div
+                  aria-hidden="true"
+                  className="absolute inset-x-6 top-8 h-[92%] -rotate-3 rounded-3xl border-2 border-ink bg-brand-light dark:border-night-border dark:bg-night-elevated"
+                />
+                <div className="relative">
+                  <Phone image={homeScreen} alt="FoundIT Android app home screen showing Lost and Found report options" />
+                  <div
+                    className="brutal-accent absolute -bottom-3 -left-4 rounded-xl bg-white px-3 py-2 font-mono text-[10px] font-bold uppercase tracking-widest dark:bg-night-surface dark:text-white sm:-left-8"
+                  >
+                    Home.screen
+                    <br />
+                    <span style={{ color: "var(--primary)" }}>Live preview</span>
+                  </div>
+                  <div className="absolute -right-3 top-14 sm:-right-6">
+                    <Tag tone="green">● Found-01</Tag>
+                  </div>
+                  <div className="absolute -left-3 top-1/3 sm:-left-8">
+                    <Tag tone="red">Lost item / 01</Tag>
+                  </div>
                 </div>
-                <div className="flex justify-between py-3">
-                  <dt>PLATFORM</dt>
-                  <dd>Android</dd>
-                </div>
-                <div className="flex justify-between gap-4 py-3">
-                  <dt>FILE</dt>
-                  <dd>FoundIT-{APP_VERSION}.apk</dd>
-                </div>
-              </dl>
-            </aside>
+              </div>
+            </Reveal>
           </div>
         </section>
-        <section className="shell py-20 sm:py-28">
-          <SectionHeader label="INSTALLATION" title="How to install" />
+
+        {/* ------------------------------ PROBLEM ----------------------------- */}
+        <section className="shell py-16 sm:py-24" aria-labelledby="problem-title">
+          <SectionHeader
+            id="problem-title"
+            eyebrow="The problem"
+            title="Lost something? You shouldn't have to chase group chats."
+            sub="Students often rely on social media posts, group chats, scattered announcements, and asking classmates individually. This makes finding belongings slow and unreliable."
+          />
+          <div className="mt-10 grid gap-4 lg:grid-cols-2">
+            <Reveal>
+              <article className="card h-full p-7 opacity-90" aria-label="Scattered reports">
+                <div className="flex items-center justify-between">
+                  <Tag tone="amber">✕ Scattered reports</Tag>
+                  <span className="meta-label" style={{ color: "var(--muted)" }}>Before</span>
+                </div>
+                <ul className="mt-5 space-y-3 text-[15px] leading-7" style={{ color: "var(--muted)" }}>
+                  {["Buried group-chat messages", "Screenshots passed hand to hand", "No clear owner or status", "No way to track what was returned"].map((t) => (
+                    <li key={t} className="flex gap-3">
+                      <span aria-hidden="true" className="mt-1 text-lost">✕</span> {t}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </Reveal>
+            <Reveal delay={100}>
+              <article className="card card-hover pixel-corners h-full border-2 p-7" style={{ borderColor: "var(--primary)" }} aria-label="One campus platform">
+                <div className="flex items-center justify-between">
+                  <Tag tone="blue">✓ One campus platform</Tag>
+                  <span className="meta-label" style={{ color: "var(--muted)" }}>FoundIT</span>
+                </div>
+                <ul className="mt-5 space-y-3 text-[15px] leading-7 font-medium">
+                  {["Every report in one searchable place", "Photos, locations, and dates attached", "LOST / FOUND / RESOLVED status is always clear", "Messaging built in to arrange returns"].map((t) => (
+                    <li key={t} className="flex gap-3">
+                      <span aria-hidden="true" className="mt-1 text-found">✓</span> {t}
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ------------------------------ SOLUTION ---------------------------- */}
+        <section className="border-y" style={{ borderColor: "var(--border)", background: "var(--surface)" }} aria-labelledby="solution-title">
+          <div className="shell py-16 sm:py-24">
+            <SectionHeader
+              id="solution-title"
+              eyebrow="The solution"
+              title="One place for your campus Lost & Found."
+              sub="Report it, search it, match it, return it — without leaving the app your campus already uses."
+            />
+            <div className="mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {SOLUTION_POINTS.map((point, i) => (
+                <Reveal key={point} delay={Math.min(i * 40, 200)}>
+                  <div className="card card-hover flex items-center gap-3 p-4">
+                    <span
+                      aria-hidden="true"
+                      className="grid h-9 w-9 shrink-0 place-items-center rounded-xl border-2 border-ink bg-brand-light font-mono text-xs font-bold text-brand-dark dark:border-night-border dark:bg-night-elevated dark:text-brand-accent"
+                    >
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <p className="text-sm font-semibold leading-6">{point}</p>
+                  </div>
+                </Reveal>
+              ))}
+              <Reveal delay={200}>
+                <div
+                  className="flex items-center gap-3 rounded-2xl border-2 border-ink bg-ink p-4 text-white dark:border-night-border dark:bg-night-elevated"
+                  role="note"
+                  aria-label="Campus flow"
+                >
+                  <span aria-hidden="true" className="font-pixel text-[10px] text-amber-300">▸▸</span>
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[.14em]">Lost → Match → Return</p>
+                </div>
+              </Reveal>
+            </div>
+          </div>
+        </section>
+
+        {/* ------------------------------ FEATURES ---------------------------- */}
+        <section id="features" className="shell py-16 sm:py-24" aria-labelledby="features-title">
+          <SectionHeader
+            id="features-title"
+            eyebrow="Features"
+            title="Everything a busy campus needs."
+            sub="Compact tools that turn a missing-item moment into a reunion — no clutter, no learning curve."
+          />
           <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {FEATURES.map((f, i) => (
+              <Reveal key={f.key} delay={Math.min((i % 4) * 60, 200)}>
+                <article className="card card-hover h-full p-6">
+                  <span
+                    className="grid h-10 w-10 place-items-center rounded-xl"
+                    style={{ background: "var(--primary)", color: "#fff" }}
+                  >
+                    <FIcon d={ICONS[f.key]} />
+                  </span>
+                  <p className="meta-label mt-5" style={{ color: "var(--muted)" }}>
+                    {String(i + 1).padStart(2, "0")}
+                  </p>
+                  <h3 className="mt-1 text-lg font-bold tracking-tight">{f.title}</h3>
+                  <p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>
+                    {f.text}
+                  </p>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        {/* ---------------------------- LOST VS FOUND -------------------------- */}
+        <section className="shell pb-16 sm:pb-24" aria-label="Lost versus Found">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Reveal>
+              <article className="card h-full overflow-hidden">
+                <div className="h-1.5 bg-lost" aria-hidden="true" />
+                <div className="p-7 sm:p-8">
+                  <div className="flex items-center gap-2">
+                    <Tag tone="red">● Lost</Tag>
+                    <span className="meta-label" style={{ color: "var(--muted)" }}>Status / Report</span>
+                  </div>
+                  <h3 className="mt-4 text-3xl font-extrabold tracking-tight">“I lost something.”</h3>
+                  <p className="mt-2 leading-7" style={{ color: "var(--muted)" }}>
+                    Report an item you&rsquo;ve lost and provide:
+                  </p>
+                  <ul className="mt-4 space-y-2 text-[15px] font-medium leading-7">
+                    {["Item details & category", "Last known location", "Date lost", "Up to 5 photos", "Contact information"].map((t) => (
+                      <li key={t} className="flex gap-2.5">
+                        <span aria-hidden="true" className="text-lost">▪</span> {t}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </article>
+            </Reveal>
+            <Reveal delay={100}>
+              <article className="card h-full overflow-hidden">
+                <div className="h-1.5 bg-found" aria-hidden="true" />
+                <div className="p-7 sm:p-8">
+                  <div className="flex items-center gap-2">
+                    <Tag tone="green">● Found</Tag>
+                    <span className="meta-label" style={{ color: "var(--muted)" }}>Status / Report</span>
+                  </div>
+                  <h3 className="mt-4 text-3xl font-extrabold tracking-tight">“I found something.”</h3>
+                  <p className="mt-2 leading-7" style={{ color: "var(--muted)" }}>
+                    Report an item you&rsquo;ve found and help its owner recover it — same clear
+                    form, same campus audience, resolved together.
+                  </p>
+                  <div className="mt-5 flex flex-wrap gap-2">
+                    <Tag tone="default">Photo proof</Tag>
+                    <Tag tone="default">Pickup location</Tag>
+                    <Tag tone="default">Resolved ✓</Tag>
+                  </div>
+                </div>
+              </article>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ----------------------------- HOW IT WORKS -------------------------- */}
+        <section id="how" className="border-y" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <div className="shell py-16 sm:py-24">
+            <SectionHeader
+              eyebrow="How it works"
+              title="Report. Search. Match. Recover."
+              sub="Four steps, one campus community looking out for each other."
+            />
+            <ol className="mt-10 grid gap-4 md:grid-cols-4">
+              {STEPS.map(([n, t, p], i) => (
+                <Reveal key={n} delay={i * 70}>
+                  <li className="card relative h-full p-6">
+                    <p className="font-pixel text-sm" style={{ color: "var(--primary)" }}>{n}</p>
+                    <h3 className="mt-4 text-xl font-extrabold">{t}</h3>
+                    <p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>{p}</p>
+                    {i < STEPS.length - 1 && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -bottom-4 left-8 hidden h-8 w-8 place-items-center rounded-full border-2 border-ink bg-amber-300 font-bold md:grid"
+                      >
+                        →
+                      </span>
+                    )}
+                  </li>
+                </Reveal>
+              ))}
+            </ol>
+          </div>
+        </section>
+
+        {/* ----------------------------- SCREENSHOTS --------------------------- */}
+        <section id="screens" className="shell py-16 sm:py-24" aria-labelledby="screens-title">
+          <SectionHeader
+            id="screens-title"
+            eyebrow="Inside the app"
+            title="Real Android UI, made for campus moments."
+            sub="Actual FoundIT screens — the same premium design language as the redesigned app. Additional views (Item Details, Notifications, Profile) share this system."
+          />
+          <div className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3">
+            <Reveal><Phone image={searchScreen} alt="FoundIT search screen with Lost and Found report listings" label="02 / Search" status="FOUND" /></Reveal>
+            <Reveal delay={70}><Phone image={lostScreen} alt="FoundIT report lost item form with photo upload" label="03 / Report lost" status="LOST" /></Reveal>
+            <Reveal delay={140}><Phone image={matchScreen} alt="FoundIT possible match view comparing lost and found reports" label="04 / Possible match" /></Reveal>
+            <Reveal><Phone image={messageScreen} alt="FoundIT messaging conversation to arrange an item return" label="05 / Messaging" /></Reveal>
+            <Reveal delay={70}><Phone image={reportsScreen} alt="FoundIT My Reports dashboard with active lost and found reports" label="06 / My reports" /></Reveal>
+            <Reveal delay={140}><Phone image={loginScreen} alt="FoundIT login screen" label="01 / Login" /></Reveal>
+          </div>
+        </section>
+
+        {/* ------------------------------ SHOWCASE ----------------------------- */}
+        <section className="border-y" style={{ borderColor: "var(--border)", background: "#0B1020" }} aria-label="App showcase">
+          <div className="shell py-16 text-white sm:py-24">
+            <Reveal>
+              <p className="eyebrow !text-brand-accent">Showcase</p>
+              <h2 className="section-title !text-white">Built for campus life.</h2>
+              <p className="section-sub !text-slate-300">
+                Classrooms, libraries, cafeterias, laboratories — FoundIT travels with you
+                across campus in your pocket.
+              </p>
+            </Reveal>
+            <div className="mt-12 grid items-end justify-center gap-10 sm:grid-cols-3 sm:gap-6">
+              <Reveal className="hidden sm:block">
+                <div className="scale-[.88] opacity-90">
+                  <Phone image={lostScreen} alt="FoundIT report screen on Android" label="Report" />
+                </div>
+              </Reveal>
+              <Reveal delay={80}>
+                <div>
+                  <Phone image={homeScreen} alt="FoundIT home screen on Android" label="Home" status="FOUND" />
+                </div>
+              </Reveal>
+              <Reveal delay={140} className="hidden sm:block">
+                <div className="scale-[.88] opacity-90">
+                  <Phone image={messageScreen} alt="FoundIT messages screen on Android" label="Messages" />
+                </div>
+              </Reveal>
+            </div>
+            <Reveal>
+              <div className="mt-10 flex flex-wrap justify-center gap-2">
+                {["Library", "Cafeteria", "Classroom", "Laboratory", "Student Center"].map((x) => (
+                  <span key={x} className="tag border-white/20 bg-white/5 text-slate-200">⌖ {x}</span>
+                ))}
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ------------------------------- HCI / UX ---------------------------- */}
+        <section className="shell py-16 sm:py-24" aria-labelledby="hci-title">
+          <SectionHeader
+            id="hci-title"
+            eyebrow="HCI / UX principles"
+            title="Designed with people in mind."
+            sub="A BSIT HCI/UI project — practical choices that make finding and returning feel straightforward."
+          />
+          <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              ["Clear Navigation", "Home, Search, Messages, My Reports, and Profile are always one tap away."],
+              ["Recognition Over Recall", "Important actions and LOST / FOUND / RESOLVED statuses are clearly labeled — never memorized."],
+              ["Accessible Interaction", "Large touch targets, readable typography, and visible focus states throughout."],
+              ["Clear Status", "LOST, FOUND, RESOLVED, loading, and error states are visually distinct — never color alone."],
+              ["Consistent Design", "Reusable cards, buttons, inputs, navigation, and 8dp spacing keep every screen familiar."],
+              ["Low Cognitive Load", "Short forms, smart defaults, and filters that match how students actually search."],
+            ].map(([t, p], i) => (
+              <Reveal key={t} delay={Math.min((i % 3) * 60, 150)}>
+                <article className="card card-hover h-full p-6">
+                  <p className="meta-label" style={{ color: "var(--primary)" }}>0{i + 1}</p>
+                  <h3 className="mt-2 text-lg font-bold">{t}</h3>
+                  <p className="mt-2 text-sm leading-6" style={{ color: "var(--muted)" }}>{p}</p>
+                </article>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        {/* ------------------------------ COMMUNITY ---------------------------- */}
+        <section className="border-y" style={{ borderColor: "var(--border)", background: "var(--surface)" }}>
+          <div className="shell grid items-center gap-8 py-16 sm:py-20 lg:grid-cols-2">
+            <Reveal>
+              <p className="eyebrow">Campus community</p>
+              <h2 className="section-title">Lost something on campus? You&rsquo;re not alone.</h2>
+              <p className="section-sub">
+                FoundIT helps students help other students — every found item posted is
+                someone&rsquo;s day saved, every resolved report makes campus a little better.
+              </p>
+              <div className="mt-6 flex flex-wrap gap-2">
+                <Tag tone="green">Students helping students</Tag>
+                <Tag tone="blue">Campus network</Tag>
+              </div>
+            </Reveal>
+            <Reveal delay={100}>
+              <div className="card pixel-corners p-6 sm:p-8">
+                <p className="meta-label" style={{ color: "var(--muted)" }}>Match status / Active</p>
+                <blockquote className="mt-3 text-xl font-bold leading-8">
+                  “Left my ID in the cafeteria — FoundIT matched it before lunch was over.”
+                </blockquote>
+                <p className="mt-3 font-mono text-xs" style={{ color: "var(--muted)" }}>
+                  — A very typical campus story · Resolved ✓
+                </p>
+                <div className="mt-5 flex gap-2 border-t pt-5" style={{ borderColor: "var(--divider)" }}>
+                  <Tag tone="red">Lost</Tag>
+                  <span aria-hidden="true" className="self-center font-bold" style={{ color: "var(--muted)" }}>→</span>
+                  <Tag tone="green">Found</Tag>
+                  <span aria-hidden="true" className="self-center font-bold" style={{ color: "var(--muted)" }}>→</span>
+                  <Tag tone="blue">Resolved</Tag>
+                </div>
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ------------------------------ DOWNLOAD ----------------------------- */}
+        <section id="download" className="grid-paper border-b" style={{ borderColor: "var(--border)" }}>
+          <div className="shell grid items-center gap-10 py-16 sm:py-24 lg:grid-cols-[1fr_.85fr]">
+            <Reveal>
+              <p className="eyebrow">Android download</p>
+              <h2 className="section-title">Bring FoundIT to your campus.</h2>
+              <p className="section-sub">
+                Download the Android application and start reporting, searching, and
+                recovering campus belongings.
+              </p>
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+                <a href={APK_DOWNLOAD_URL} className="btn btn-primary text-base" download>
+                  ⬇ Download APK
+                </a>
+                <a
+                  href={GITHUB_URL}
+                  className="btn btn-secondary"
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  View on GitHub <span aria-hidden="true">↗</span>
+                </a>
+              </div>
+              <p className="mt-5 font-mono text-xs" style={{ color: "var(--muted)" }}>
+                * FoundIT is currently available for Android.
+              </p>
+            </Reveal>
+            <Reveal delay={100}>
+              <aside className="card brutal-accent p-6 sm:p-7" aria-label="Release information">
+                <div className="flex items-center gap-3">
+                  <Logo compact />
+                  <span className="ml-auto"><Tag tone="blue">Android</Tag></span>
+                </div>
+                <p className="meta-label mt-6" style={{ color: "var(--primary)" }}>Release information</p>
+                <dl className="mt-3 divide-y font-mono text-sm" style={{ borderColor: "var(--divider)" }}>
+                  {[
+                    ["Version", APP_VERSION],
+                    ["Platform", "Android"],
+                    ["File", `FoundIT-${APP_VERSION}.apk`],
+                  ].map(([k, v]) => (
+                    <div key={k} className="flex items-center justify-between gap-4 py-3" style={{ borderColor: "var(--divider)" }}>
+                      <dt className="uppercase tracking-widest text-[11px]" style={{ color: "var(--muted)" }}>{k}</dt>
+                      <dd className="font-bold">{v}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <a href={APK_DOWNLOAD_URL} className="btn btn-primary mt-5 w-full" download>
+                  ⬇ Download APK
+                </a>
+              </aside>
+            </Reveal>
+          </div>
+        </section>
+
+        {/* ------------------------------- INSTALL ----------------------------- */}
+        <section className="shell py-16 sm:py-20" aria-label="How to install">
+          <SectionHeader eyebrow="Installation" title="How to install" />
+          <ol className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {[
               "Download the APK.",
               "Open the downloaded APK.",
               "Allow installation from your browser or file manager if Android asks.",
               "Install FoundIT and open the app.",
-            ].map((x, i) => (
-              <article className="brutal-sm bg-white p-5" key={x}>
-                <p className="font-pixel text-lg text-blue-600">0{i + 1}</p>
-                <p className="mt-7 font-semibold leading-6">{x}</p>
-              </article>
+            ].map((step, i) => (
+              <Reveal key={step} delay={i * 60}>
+                <li className="card h-full p-5">
+                  <p className="font-pixel text-sm" style={{ color: "var(--primary)" }}>0{i + 1}</p>
+                  <p className="mt-4 font-semibold leading-6">{step}</p>
+                </li>
+              </Reveal>
             ))}
-          </div>
-          <p className="mt-6 font-mono text-xs text-slate-500">
-            * FoundIT is currently available for Android.
-          </p>
+          </ol>
         </section>
-        <section className="shell pb-20 sm:pb-28">
-          <SectionHeader label="HELP DESK" title="Questions, answered." />
+
+        {/* --------------------------------- FAQ ------------------------------- */}
+        <section id="faq" className="shell pb-16 sm:pb-24" aria-labelledby="faq-title">
+          <SectionHeader id="faq-title" eyebrow="Help desk" title="Questions, answered." />
           <FAQ />
         </section>
-        <section className="border-y-[3px] border-slate-950 bg-blue-600 py-20 text-white">
-          <div className="shell grid items-end gap-8 md:grid-cols-2">
-            <h2 className="font-black uppercase leading-[.82] tracking-[-.08em] text-6xl sm:text-8xl">
-              Lost it?
-              <br />
-              Find it.
-              <br />
-              <span className="text-amber-300">Found it?</span>
-              <br />
-              Return it.
-            </h2>
-            <div>
-              <p className="font-mono leading-7 text-blue-100">
+
+        {/* ------------------------------ FINAL CTA ---------------------------- */}
+        <section className="border-t-2 border-ink bg-brand py-16 text-white dark:border-night-border sm:py-20">
+          <div className="shell grid items-end gap-8 md:grid-cols-[1.2fr_.8fr]">
+            <Reveal>
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[.18em] text-blue-100">
+                // Final call
+              </p>
+              <h2 className="mt-3 text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl">
+                Find it. Return it.
+                <br />
+                Make campus better.
+              </h2>
+            </Reveal>
+            <Reveal delay={100}>
+              <p className="leading-7 text-blue-100">
                 One campus system for the little things that matter.
               </p>
-              <Button href={APK_DOWNLOAD_URL} kind="white" className="mt-6">
-                Download FoundIT
-              </Button>
-            </div>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row">
+                <a href={APK_DOWNLOAD_URL} className="btn btn-ghost-light" download>
+                  Download FoundIT
+                </a>
+                <a
+                  href="#features"
+                  className="btn border-2 border-white/70 text-white hover:-translate-y-0.5 hover:bg-white/10"
+                >
+                  Explore FoundIT
+                </a>
+              </div>
+            </Reveal>
           </div>
         </section>
       </main>
-      <footer className="bg-slate-950 py-10 text-white">
-        <div className="shell grid gap-8 md:grid-cols-3">
+
+      <footer className="bg-night text-white" style={{ background: "#0B1020" }}>
+        <div className="shell grid gap-8 py-12 md:grid-cols-3">
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-6 text-slate-300">
-              Find what you've lost. Return what you've found.
+              Find what you&rsquo;ve lost. Return what you&rsquo;ve found.
             </p>
+            <p className="mt-3 font-mono text-[11px] text-slate-500">{APP_VERSION} · Android</p>
           </div>
-          <div className="flex flex-wrap content-start gap-x-5 gap-y-3 font-mono text-xs font-bold">
-            <a href="#home">HOME</a>
-            <a href="#features">FEATURES</a>
-            <a href="#how">HOW IT WORKS</a>
-            <a href="#download">DOWNLOAD</a>
-            <a href={GITHUB_URL}>GITHUB</a>
-          </div>
+          <nav className="flex flex-wrap content-start gap-x-6 gap-y-3 font-mono text-[11px] font-bold uppercase tracking-[.14em]" aria-label="Footer">
+            <a href="#features" className="text-slate-300 hover:text-white">Features</a>
+            <a href="#how" className="text-slate-300 hover:text-white">How It Works</a>
+            <a href="#download" className="text-slate-300 hover:text-white">Download</a>
+            <a href={GITHUB_URL} target="_blank" rel="noreferrer" className="text-slate-300 hover:text-white">
+              GitHub ↗
+            </a>
+          </nav>
           <div className="font-mono text-xs leading-6 text-slate-400">
             FoundIT — Campus Lost &amp; Found
             <br />
@@ -887,4 +896,3 @@ function App() {
     </>
   );
 }
-export default App;
